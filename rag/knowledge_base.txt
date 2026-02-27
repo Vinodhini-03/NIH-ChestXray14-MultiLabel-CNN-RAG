@@ -1,0 +1,106 @@
+DISEASE: Atelectasis
+DEFINITION: Atelectasis is the collapse or incomplete expansion of the lung or a portion of the lung. It occurs when the tiny air sacs (alveoli) within the lung become deflated.
+RADIOLOGICAL FINDINGS: Appears as increased opacity, volume loss, displacement of fissures, mediastinal shift toward the affected side.
+PREVALENCE: One of the most common findings on chest X-rays, especially postoperative patients.
+CAVEATS: Can be confused with consolidation. Label noise exists in NLP-mined labels from radiology reports.
+MODEL LIMITATIONS: Deep learning models may confuse atelectasis with pleural effusion due to similar opacification patterns.
+
+DISEASE: Cardiomegaly
+DEFINITION: Cardiomegaly refers to an enlarged heart, defined radiologically as a cardiothoracic ratio greater than 0.5 on a PA chest X-ray.
+RADIOLOGICAL FINDINGS: Increased cardiac silhouette, cardiothoracic ratio > 0.5.
+PREVALENCE: Common finding associated with heart failure, hypertension, and cardiomyopathy.
+CAVEATS: AP views artificially magnify cardiac size. Dataset contains mixed PA and AP views.
+MODEL LIMITATIONS: Model performance may be lower on AP views due to magnification artifact.
+
+DISEASE: Effusion
+DEFINITION: Pleural effusion is an abnormal accumulation of fluid in the pleural space between the lung and chest wall.
+RADIOLOGICAL FINDINGS: Blunting of costophrenic angles, meniscus sign, homogeneous opacity at lung base.
+PREVALENCE: Common finding with many causes including heart failure, pneumonia, and malignancy.
+CAVEATS: Small effusions may be missed. Layering effusions on supine films appear as diffuse haziness.
+MODEL LIMITATIONS: May be confused with consolidation or atelectasis in lower lobes.
+
+DISEASE: Infiltration
+DEFINITION: Pulmonary infiltration refers to material denser than air within the lung parenchyma, including fluid, cells, or protein.
+RADIOLOGICAL FINDINGS: Ill-defined opacities that may be patchy or diffuse.
+PREVALENCE: Most common label in ChestX-ray14 dataset (19,894 cases).
+CAVEATS: Highly subjective term. Associated with high label noise due to vague radiological definition.
+MODEL LIMITATIONS: High prevalence may cause model to over-predict this class.
+
+DISEASE: Mass
+DEFINITION: A pulmonary mass is an opacity greater than 3cm in diameter within the lung.
+RADIOLOGICAL FINDINGS: Well or poorly defined opacity greater than 3cm, may have irregular borders.
+PREVALENCE: Less common, associated with malignancy.
+CAVEATS: Distinction between mass and nodule is size-based (3cm cutoff).
+MODEL LIMITATIONS: Small masses near the 3cm boundary may be misclassified as nodules.
+
+DISEASE: Nodule
+DEFINITION: A pulmonary nodule is a rounded opacity less than 3cm in diameter, surrounded by lung parenchyma.
+RADIOLOGICAL FINDINGS: Round or oval opacity less than 3cm, well or poorly defined.
+PREVALENCE: Common incidental finding. May represent benign granuloma or early malignancy.
+CAVEATS: Nodules less than 1cm are difficult to detect on plain X-ray.
+MODEL LIMITATIONS: Small nodules are frequently missed by both radiologists and AI models on plain radiographs.
+
+DISEASE: Pneumonia
+DEFINITION: Pneumonia is an infection causing inflammation of the air sacs in one or both lungs, which may fill with fluid.
+RADIOLOGICAL FINDINGS: Lobar or segmental consolidation, air bronchograms, ground glass opacity.
+PREVALENCE: Rare in this dataset (1,431 cases) due to NLP label extraction limitations.
+CAVEATS: Significant label noise. Many pneumonia cases may be labeled as consolidation or infiltration instead.
+MODEL LIMITATIONS: Severely underrepresented class. Model predictions for pneumonia should be interpreted with extra caution.
+
+DISEASE: Pneumothorax
+DEFINITION: Pneumothorax is the presence of air in the pleural space, causing lung collapse.
+RADIOLOGICAL FINDINGS: Visible pleural line with absent lung markings peripheral to it, deep sulcus sign on supine films.
+PREVALENCE: Moderate prevalence (5,302 cases).
+CAVEATS: Tension pneumothorax is a medical emergency. Small pneumothoraces may be subtle on plain films.
+MODEL LIMITATIONS: Small apical pneumothoraces may be missed. Bullous emphysema can mimic pneumothorax.
+
+DISEASE: Consolidation
+DEFINITION: Consolidation refers to replacement of alveolar air by fluid, cells, or other material, producing increased lung opacity.
+RADIOLOGICAL FINDINGS: Homogeneous increased opacity with air bronchograms, lobar distribution.
+PREVALENCE: Moderate prevalence (4,667 cases).
+CAVEATS: Often overlaps with pneumonia label. Air bronchograms help distinguish from atelectasis.
+MODEL LIMITATIONS: May overlap with atelectasis and effusion predictions.
+
+DISEASE: Edema
+DEFINITION: Pulmonary edema is accumulation of fluid in the lung interstitium and alveoli, usually due to heart failure.
+RADIOLOGICAL FINDINGS: Bilateral perihilar opacities, Kerley B lines, pleural effusions, cardiomegaly.
+PREVALENCE: Moderate prevalence (2,303 cases).
+CAVEATS: Cardiogenic vs non-cardiogenic edema have different treatments. Often co-occurs with cardiomegaly and effusion.
+MODEL LIMITATIONS: Often co-predicted with cardiomegaly and effusion due to frequent co-occurrence.
+
+DISEASE: Emphysema
+DEFINITION: Emphysema is permanent enlargement of airspaces distal to terminal bronchioles with destruction of alveolar walls.
+RADIOLOGICAL FINDINGS: Hyperinflation, flattened diaphragms, increased AP diameter, bullae.
+PREVALENCE: Moderate prevalence (2,516 cases).
+CAVEATS: Plain X-ray underestimates emphysema severity compared to CT.
+MODEL LIMITATIONS: Subtle emphysema may be missed. Hyperinflation signs overlap with asthma.
+
+DISEASE: Fibrosis
+DEFINITION: Pulmonary fibrosis is scarring of lung tissue causing progressive loss of lung function.
+RADIOLOGICAL FINDINGS: Reticular opacities, honeycombing, traction bronchiectasis, volume loss.
+PREVALENCE: Rare in dataset (1,686 cases).
+CAVEATS: Plain X-ray has limited sensitivity for early fibrosis. CT is gold standard.
+MODEL LIMITATIONS: Fibrosis patterns are subtle on plain radiographs. Model may underperform on this class.
+
+DISEASE: Pleural_Thickening
+DEFINITION: Pleural thickening refers to scarring and thickening of the pleura, often due to prior inflammation or asbestos exposure.
+RADIOLOGICAL FINDINGS: Irregular pleural surface, blunted costophrenic angles, calcification in chronic cases.
+PREVALENCE: Moderate prevalence (3,385 cases).
+CAVEATS: Difficult to distinguish from small pleural effusion on plain films.
+MODEL LIMITATIONS: May be confused with pleural effusion by the model.
+
+DISEASE: Hernia
+DEFINITION: Hiatal or diaphragmatic hernia involves protrusion of abdominal contents through the diaphragm into the chest cavity.
+RADIOLOGICAL FINDINGS: Air or soft tissue density above the diaphragm, bowel gas pattern in chest.
+PREVALENCE: Rarest class in dataset (227 cases).
+CAVEATS: Severely underrepresented. Class weight of 523 applied during training.
+MODEL LIMITATIONS: Due to extreme rarity, model predictions for hernia have the lowest reliability. Interpret with maximum caution.
+
+DATASET LIMITATIONS:
+The NIH ChestX-ray14 dataset labels were mined using NLP from radiology reports and are not verified by radiologists. Estimated label error rate is 10-20%. This system is strictly assistive and must not be used for clinical diagnosis.
+
+MODEL LIMITATIONS:
+All models were trained on a dataset with known label noise and class imbalance. Performance varies significantly across disease classes. Mean AUROC provides an overall measure but masks poor performance on rare classes.
+
+DISCLAIMER:
+This AI system is strictly assistive. It is not a diagnostic tool and must not replace professional medical judgment. All predictions must be reviewed by a qualified radiologist before any clinical decision is made.

@@ -1,0 +1,37 @@
+============================================================
+AI-ASSISTED CHEST X-RAY INTERPRETATION
+============================================================
+
+⚠️  DISCLAIMER: This is an AI-assisted analysis tool only.
+This system is NOT a diagnostic tool and must NOT replace
+professional medical judgment. All findings must be reviewed
+by a qualified radiologist before any clinical decision.
+
+DETECTED FINDINGS:
+----------------------------------------
+
+• Atelectasis: 82.0% (High confidence)
+
+• Effusion: 71.0% (Moderate confidence)
+
+KNOWLEDGE BASE CONTEXT:
+----------------------------------------
+
+[Citation 1]
+  DISEASE: Atelectasis
+  DEFINITION: Atelectasis is the collapse or incomplete expansion of the lung or a portion of the lung. It occurs when the tiny air sacs (alveoli) within the lung become deflated.
+  RADIOLOGICAL FINDINGS: Appears as increased opacity, volume loss, displacement of fissures, mediastinal shift toward the affected side.
+
+[Citation 2]
+  DISEASE: Effusion
+  DEFINITION: Pleural effusion is an abnormal accumulation of fluid in the pleural space between the lung and chest wall.
+  RADIOLOGICAL FINDINGS: Blunting of costophrenic angles, meniscus sign, homogeneous opacity at lung base.
+
+[Citation 3]
+  DISEASE: Edema
+  DEFINITION: Pulmonary edema is accumulation of fluid in the lung interstitium and alveoli, usually due to heart failure.
+  RADIOLOGICAL FINDINGS: Bilateral perihilar opacities, Kerley B lines, pleural effusions, cardiomegaly.
+
+============================================================
+END OF AI-ASSISTED REPORT
+============================================================
