@@ -38,7 +38,17 @@ LABELS = [
 ]
 load_dotenv() 
 GROQ_KEY   = os.getenv("GROQ_API_KEY", "")
-CHECKPOINT = os.path.join(os.path.dirname(__file__), '..', 'checkpoints', 'ResNet18_best.pth')
+CHECKPOINT = os.path.join(os.path.dirname(__file__), 'ResNet18_best.pth')
+
+def download_model():
+    if not os.path.exists(CHECKPOINT):
+        print("Downloading model from HuggingFace...")
+        import urllib.request
+        url = "https://huggingface.co/Vin003/NIH-ChestXray14-ResNet18/resolve/main/ResNet18_best.pth"
+        urllib.request.urlretrieve(url, CHECKPOINT)
+        print("Model downloaded successfully.")
+
+download_model()
 
 KNOWLEDGE = [
     "DISEASE: Atelectasis\nCollapse or incomplete expansion of lung tissue. Increased opacity, volume loss, mediastinal shift toward affected side. Label noise present in NIH dataset.",
