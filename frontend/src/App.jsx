@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const API = "http://localhost:8000";
+const API = "https://nih-chestxray14-multilabel-cnn-rag-production.up.railway.app";
 
 const LABELS = [
   "Atelectasis","Cardiomegaly","Effusion","Infiltration",
