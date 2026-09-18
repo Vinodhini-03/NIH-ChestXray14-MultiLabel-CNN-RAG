@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const API = "https://nih-chestxray14-multilabel-cnn-rag-production.up.railway.app";
+const API = "http://localhost:4000";
 
 const LABELS = [
   "Atelectasis","Cardiomegaly","Effusion","Infiltration",
@@ -229,6 +229,108 @@ function TypingIndicator() {
         </div>
         <div style={{ fontSize:"0.72rem", color:"#334155", marginTop:5 }}>Analysing X-ray…</div>
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LOGIN / REGISTER PAGE (new — required now that /predict and /chat/stream sit
+// behind the gateway's JWT auth middleware)
+// ══════════════════════════════════════════════════════════════════════════════
+function LoginPage({ onAuthenticated }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = useCallback(async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!email || !password) { setError("Email and password are required."); return; }
+    setBusy(true);
+    try {
+      const res = await fetch(`${API}/auth/${mode === "login" ? "login" : "register"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      localStorage.setItem("chestai_token", data.token);
+      onAuthenticated(data.token);
+    } catch (err) {
+      setError(err.message || "Could not reach the gateway on http://localhost:4000.");
+    } finally {
+      setBusy(false);
+    }
+  }, [email, password, mode, onAuthenticated]);
+
+  return (
+    <div style={{
+      minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
+      background:"#060910", color:"#e2e8f0", padding:"2rem",
+    }}>
+      <form onSubmit={submit} style={{
+        width:"100%", maxWidth:380,
+        background:"#0d1117", border:"1px solid rgba(30,41,59,0.8)",
+        borderRadius:16, padding:"2rem",
+      }}>
+        <div style={{ fontSize:"1.3rem", fontWeight:900, marginBottom:6, fontFamily:"'DM Sans',sans-serif" }}>
+          Chest<span style={{ color:"#3b82f6" }}>AI</span>
+        </div>
+        <div style={{ fontSize:"0.8rem", color:"#475569", marginBottom:"1.5rem" }}>
+          {mode === "login" ? "Log in to analyse an X-ray." : "Create an account to get started."}
+        </div>
+
+        <label style={{ fontSize:"0.72rem", color:"#64748b", fontWeight:700 }}>Email</label>
+        <input
+          type="email" value={email} onChange={e=>setEmail(e.target.value)}
+          style={{
+            width:"100%", marginTop:4, marginBottom:"1rem", padding:"10px 12px",
+            background:"#080d14", border:"1px solid rgba(30,41,59,0.8)", borderRadius:8,
+            color:"#e2e8f0", fontSize:"0.88rem", outline:"none",
+          }}
+          placeholder="you@example.com" autoComplete="email"
+        />
+
+        <label style={{ fontSize:"0.72rem", color:"#64748b", fontWeight:700 }}>Password</label>
+        <input
+          type="password" value={password} onChange={e=>setPassword(e.target.value)}
+          style={{
+            width:"100%", marginTop:4, marginBottom:"1.2rem", padding:"10px 12px",
+            background:"#080d14", border:"1px solid rgba(30,41,59,0.8)", borderRadius:8,
+            color:"#e2e8f0", fontSize:"0.88rem", outline:"none",
+          }}
+          placeholder="••••••••" autoComplete={mode==="login" ? "current-password" : "new-password"}
+        />
+
+        {error && (
+          <div style={{
+            background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.25)",
+            color:"#f87171", fontSize:"0.78rem", borderRadius:8, padding:"8px 12px", marginBottom:"1rem",
+          }}>{error}</div>
+        )}
+
+        <button type="submit" disabled={busy} style={{
+          width:"100%", padding:"11px 0", border:"none", borderRadius:10,
+          background:"linear-gradient(135deg,#1d4ed8,#0891b2)", color:"#fff",
+          fontSize:"0.9rem", fontWeight:700, cursor: busy ? "not-allowed" : "pointer",
+          opacity: busy ? 0.7 : 1,
+        }}>
+          {busy ? "Please wait…" : mode === "login" ? "Log In" : "Register"}
+        </button>
+
+        <div style={{ textAlign:"center", marginTop:"1rem", fontSize:"0.78rem", color:"#475569" }}>
+          {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
+          <span
+            onClick={()=>{ setMode(mode === "login" ? "register" : "login"); setError(""); }}
+            style={{ color:"#60a5fa", cursor:"pointer", fontWeight:700 }}
+          >
+            {mode === "login" ? "Register" : "Log in"}
+          </span>
+        </div>
+      </form>
     </div>
   );
 }
@@ -541,7 +643,7 @@ function HomePage({ onStart }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // CHAT PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-function ChatPage({ onHome }) {
+function ChatPage({ onHome, token, onAuthError }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput]       = useState("");
   const [loading, setLoading]   = useState(false);
@@ -562,8 +664,13 @@ function ChatPage({ onHome }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`${API}/predict`, { method:"POST", body:fd });
-      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const res = await fetch(`${API}/predict`, {
+        method:"POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body:fd,
+      });
+      if (res.status === 401) { onAuthError(); return; }
+      if (!res.ok) throw new Error((await res.json()).error || res.statusText);
       const data = await res.json();
       setProbs(data.probs);
       setMessages(prev=>[...prev, {
@@ -576,7 +683,7 @@ function ChatPage({ onHome }) {
         content:`Connection error — make sure the FastAPI backend is running.\n\nIn your terminal:\n**cd backend**\n**uvicorn main:app --reload --port 8000**`,
       }]);
     } finally { setLoading(false); }
-  }, []);
+  }, [token, onAuthError]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -590,9 +697,13 @@ function ChatPage({ onHome }) {
     try {
       const res = await fetch(`${API}/chat/stream`, {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({ question:text, probs: probs || new Array(14).fill(0) }),
       });
+      if (res.status === 401) { onAuthError(); return; }
       if (!res.ok) throw new Error(res.statusText);
 
       const reader = res.body.getReader();
@@ -619,7 +730,7 @@ function ChatPage({ onHome }) {
         ? {...m, content:"Connection error — is the backend running on port 8000?", _streaming:false}
         : m));
     }
-  }, [input, loading, probs]);
+  }, [input, loading, probs, token, onAuthError]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault(); setDragOver(false);
@@ -855,6 +966,14 @@ function ChatPage({ onHome }) {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function App() {
   const [page, setPage] = useState("home");
+  const [token, setToken] = useState(() => localStorage.getItem("chestai_token") || null);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("chestai_token");
+    setToken(null);
+    setPage("home");
+  }, []);
+
   return (
     <>
       <style>{`
@@ -870,7 +989,13 @@ export default function App() {
         @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
         @keyframes floatPulse { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
       `}</style>
-      {page==="home" ? <HomePage onStart={()=>setPage("chat")}/> : <ChatPage onHome={()=>setPage("home")}/>}
+      {!token ? (
+        <LoginPage onAuthenticated={(t)=>{ setToken(t); setPage("home"); }} />
+      ) : page==="home" ? (
+        <HomePage onStart={()=>setPage("chat")}/>
+      ) : (
+        <ChatPage onHome={()=>setPage("home")} token={token} onAuthError={logout}/>
+      )}
     </>
   );
 }

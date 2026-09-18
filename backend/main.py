@@ -230,7 +230,7 @@ async def predict(file: UploadFile = File(...)):
         client = Groq(api_key=os.getenv("GROQ_API_KEY", ""))
         prompt = build_prompt(probs, chunks)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
             temperature=0.3,
@@ -258,7 +258,7 @@ async def chat_stream(req: ChatRequest):
 
     def generate():
         stream = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+           model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=600,
             temperature=0.3,

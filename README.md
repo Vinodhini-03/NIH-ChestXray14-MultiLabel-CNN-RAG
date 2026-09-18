@@ -1,8 +1,8 @@
 # ChestAI — NIH ChestX-ray14 Multi-label Classification
 
-### ResNet-18 · FAISS RAG · Groq LLaMA-3.3-70B · React + FastAPI
+### ResNet-18 · FAISS RAG · Groq (openai/gpt-oss-120b) · React + Node.js Gateway + FastAPI
 
-**Live Demo → [chestai.vercel.app](https://chestai.vercel.app)**
+**Note:** The previous Railway deployment has expired. Currently runnable locally — see Local Setup below.
 
 ---
 
@@ -11,6 +11,8 @@
 AI-powered chest X-ray analysis system that classifies 14 thoracic diseases using deep learning, explains predictions via Grad-CAM, and provides RAG-grounded LLM interpretation through a ChatGPT-style interface.
 
 Trained on NIH ChestX-ray14 (112,120 images) using three CNN architectures with patient-wise splits and class-weighted loss to handle severe label imbalance.
+
+A Node.js/Express gateway sits in front of the FastAPI ML backend, handling authentication, upload validation, and rate limiting before any request reaches the model-serving code.
 
 ---
 
@@ -41,15 +43,17 @@ Trained on NIH ChestX-ray14 (112,120 images) using three CNN architectures with 
 ```
 User uploads X-ray
        ↓
+Node.js/Express Gateway → JWT auth, upload validation, rate limiting
+       ↓
 ResNet-18 inference → 14 disease probability scores
        ↓
 Grad-CAM heatmap (top predicted class)
        ↓
 FAISS vector search → top-3 knowledge base chunks
        ↓
-Groq LLaMA-3.3-70B → structured clinical interpretation (streaming)
+Groq (openai/gpt-oss-120b) → structured clinical interpretation (streaming)
        ↓
-React UI → ChatGPT-style conversational follow-up
+React UI → ChatGPT-style conversational follow-up (requires login)
 ```
 
 ---
@@ -59,16 +63,24 @@ React UI → ChatGPT-style conversational follow-up
 **Frontend**
 - React 18 + Vite
 - ChatGPT-style dark UI with drag-and-drop X-ray upload
+- Login/register screen — required since the gateway now sits between the UI and the model
 - Server-Sent Events for streaming LLM responses
-- Deployed on **Vercel**
+
+**Gateway**
+- Node.js + Express
+- JWT authentication (`/auth/register`, `/auth/login`) with role-based permission middleware
+- Upload validation — MIME type + size + magic-byte checks (rejects renamed/spoofed files before they reach FastAPI)
+- Rate limiting (tighter on `/predict`, since each call triggers full model inference)
+- Helmet + locked-down CORS
+- Proxies `/predict` and streams `/chat/stream` through to FastAPI unchanged
+- Known limitations: user store is in-memory (not a database), no refresh-token flow — a solid demo of the pattern, not production-hardened
 
 **Backend**
 - FastAPI + Uvicorn
 - PyTorch ResNet-18 inference
 - Grad-CAM explainability (layer4 activations)
 - FAISS + sentence-transformers (all-MiniLM-L6-v2) RAG
-- Groq LLaMA-3.3-70B streaming responses
-- Deployed on **Railway** (Docker)
+- Groq `openai/gpt-oss-120b` streaming responses
 
 **Model Storage**
 - ResNet-18 checkpoint hosted on HuggingFace Hub
@@ -83,9 +95,18 @@ NIH-ChestXray14-MultiLabel-CNN-RAG/
 ├── backend/
 │   ├── main.py              # FastAPI — /predict, /chat/stream, /health
 │   └── requirements.txt
+├── gateway/
+│   ├── src/
+│   │   ├── routes/          # auth.js, predict.js, chat.js
+│   │   ├── middleware/      # auth.js, validateUpload.js, errorHandler.js
+│   │   ├── utils/           # logger.js, userStore.js
+│   │   ├── config.js
+│   │   └── server.js
+│   ├── .env.example
+│   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx          # Full React UI (home + chat pages)
+│   │   ├── App.jsx          # Full React UI (login, home, chat pages)
 │   │   └── main.jsx
 │   ├── index.html
 │   ├── package.json
@@ -118,12 +139,15 @@ NIH-ChestXray14-MultiLabel-CNN-RAG/
 - **Confidence-aware output** — High / Moderate / Low confidence pills
 - **Patient-wise splits** — zero data leakage between train/val/test
 - **Class-weighted BCE loss** — handles extreme imbalance (Hernia: 523x weight)
+- **JWT-authenticated gateway** — auth, upload validation (magic-byte checks), and rate limiting sit in front of the model, not inside it
 
 ---
 
 ## Local Setup
 
-### Backend
+Run all three services locally, each in its own terminal, in this order:
+
+### 1. Backend (FastAPI)
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -134,7 +158,18 @@ echo "GROQ_API_KEY=your_key_here" > .env
 uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
+### 2. Gateway (Node.js)
+```bash
+cd gateway
+npm install
+cp .env.example .env
+# Open .env and set a real JWT_SECRET, e.g.:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npm start
+# Runs on http://localhost:4000
+```
+
+### 3. Frontend (React)
 ```bash
 cd frontend
 npm install
@@ -142,13 +177,19 @@ npm run dev
 # Open http://localhost:3000
 ```
 
+The frontend calls the gateway (`http://localhost:4000`), not FastAPI directly. You'll need to register/log in through the UI before uploading an X-ray — every `/predict` and `/chat/stream` call requires a valid JWT.
+
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/predict` | Upload X-ray → predictions + Grad-CAM + LLM summary |
-| POST | `/chat/stream` | Streaming follow-up chat (SSE) |
-| GET | `/health` | Backend health check |
+All routes below are served through the gateway (`http://localhost:4000`), which forwards validated, authenticated requests to FastAPI internally.
+
+| Method | Endpoint | Auth required | Description |
+|--------|----------|:---:|-------------|
+| POST | `/auth/register` | – | Create an account, returns a JWT |
+| POST | `/auth/login` | – | Log in, returns a JWT |
+| POST | `/predict` | ✓ | Upload X-ray → predictions + Grad-CAM + LLM summary |
+| POST | `/chat/stream` | ✓ | Streaming follow-up chat (SSE) |
+| GET | `/health` | – | Backend health check |
 
 ---
 
